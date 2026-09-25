@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --tm-page: #f8fafc;
+  --tm-surface: #ffffff;
+  --tm-surface-muted: rgba(241, 245, 249, 0.9);
+  --tm-surface-soft: #f1f5f9;
+  --tm-text: #0f172a;
+  --tm-text-muted: #475569;
+  --tm-border: #e2e8f0;
+  --tm-hover: #f1f5f9;
+  --tm-footer: rgba(255, 255, 255, 0.95);
+}
+
+html[data-theme='dark'] {
+  color-scheme: dark;
+  --tm-page: #020617;
+  --tm-surface: #0f172a;
+  --tm-surface-muted: rgba(15, 23, 42, 0.85);
+  --tm-surface-soft: rgba(15, 23, 42, 0.65);
+  --tm-text: #e2e8f0;
+  --tm-text-muted: #94a3b8;
+  --tm-border: #1e293b;
+  --tm-hover: rgba(30, 41, 59, 0.7);
+  --tm-footer: rgba(2, 6, 23, 0.95);
+}
+
+body {
+  @apply transition-colors duration-300;
+  background-color: var(--tm-page);
+  color: var(--tm-text);
+}
+
+/*
+ * Compatibility layer for pages still using dark-only slate classes.
+ * This keeps light mode readable while those screens are gradually migrated.
+ */
+html[data-theme='light'] .text-white,
+html[data-theme='light'] .text-slate-100,
+html[data-theme='light'] .text-slate-200 {
+  color: var(--tm-text) !important;
+}
+
+html[data-theme='light'] .text-slate-300,
+html[data-theme='light'] .text-slate-400,
+html[data-theme='light'] .text-slate-500 {
+  color: var(--tm-text-muted) !important;
+}
+
+html[data-theme='light'] [class*='bg-slate-950'],
+html[data-theme='light'] [class*='bg-slate-900'] {
+  background-color: var(--tm-surface) !important;
+}
+
+html[data-theme='light'] [class*='bg-slate-800'] {
+  background-color: var(--tm-surface-muted) !important;
+}
+
+html[data-theme='light'] [class*='border-slate-900'],
+html[data-theme='light'] [class*='border-slate-800'],
+html[data-theme='light'] [class*='border-slate-700'] {
+  border-color: var(--tm-border) !important;
+}
+
+html[data-theme='light'] .text-cyan-100,
+html[data-theme='light'] .text-cyan-200,
+html[data-theme='light'] .text-cyan-300 {
+  color: #155e75 !important;
+}
+
+html[data-theme='light'] .text-fuchsia-100,
+html[data-theme='light'] .text-fuchsia-200,
+html[data-theme='light'] .text-fuchsia-300 {
+  color: #86198f !important;
+}
+
+html[data-theme='light'] .text-emerald-100,
+html[data-theme='light'] .text-emerald-200,
+html[data-theme='light'] .text-emerald-300 {
+  color: #065f46 !important;
+}
+
+html[data-theme='light'] .text-amber-100,
+html[data-theme='light'] .text-amber-200,
+html[data-theme='light'] .text-amber-300 {
+  color: #92400e !important;
+}
+
+html[data-theme='light'] .text-red-100,
+html[data-theme='light'] .text-red-200,
+html[data-theme='light'] .text-red-300 {
+  color: #991b1b !important;
+}
