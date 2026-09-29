@@ -3,12 +3,28 @@ import ApiError from '../utils/ApiError.js';
 import User from '../models/user.model.js';
 import { Ticket } from '../models/ticket.model.js';
 import { appendTicketCommunication, createTicketConversation } from './conversation.service.js';
+import SOCKET_EVENTS from '../socket/socketEvents.js';
+import { emitNotificationToRoles, emitNotificationToUsers } from '../socket/socketServer.js';
 
 const basePopulate = [
   { path: 'createdBy', select: 'name email role' },
   { path: 'assignedTo', select: 'name email role' },
   { path: 'comments.commentedBy', select: 'name email role' }
 ];
+
+const notifyTicketAssignment = async (ticket) => {
+  const populatedTicket = await Ticket.findById(ticket._id).populate(basePopulate);
+  const notification = {
+    ticketId: populatedTicket._id,
+    ticket: populatedTicket,
+    assignedTo: populatedTicket.assignedTo
+  };
+
+  await emitNotificationToUsers([populatedTicket.assignedTo._id], SOCKET_EVENTS.TICKET_ASSIGNED, notification);
+  await emitNotificationToRoles(['admin'], SOCKET_EVENTS.TICKET_ASSIGNED, notification);
+
+  return populatedTicket;
+};
 
 const createTicket = async ({ title, description, priority, category, createdBy, conversationContent }) => {
   const ticket = await Ticket.create({
@@ -30,7 +46,16 @@ const createTicket = async ({ title, description, priority, category, createdBy,
     await ticket.save();
   }
 
-  return Ticket.findById(ticket._id).populate(basePopulate);
+  const populatedTicket = await Ticket.findById(ticket._id).populate(basePopulate);
+
+  const notification = {
+    ticketId: populatedTicket._id,
+    ticket: populatedTicket
+  };
+
+  await emitNotificationToRoles(['agent', 'admin'], SOCKET_EVENTS.TICKET_CREATED, notification);
+
+  return populatedTicket;
 };
 
 const getAllTickets = async () => Ticket.find({}).sort({ createdAt: -1 }).populate(basePopulate);
@@ -54,20 +79,10 @@ const assignTicketToAgent = async ({ ticketId, agentId }) => {
   ticket.assignedTo = agentId;
   await ticket.save();
 
-  return Ticket.findById(ticket._id).populate(basePopulate);
+  return notifyTicketAssignment(ticket);
 };
 
 const updateTicketStatus = async ({ ticketId, status, currentUser }) => {
-  const ticket = await Ticket.findById(ticketId);
-
-  if (!ticket) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Ticket not found');
-  }
-
-  const isAdmin = currentUser.role === 'admin';
-  const isAssignedAgent =
-    currentUser.role === 'agent' && ticket.assignedTo && ticket.assignedTo.toString() === currentUser._id.toString();
-
   if (!isAdmin && !isAssignedAgent) {
     throw new ApiError(StatusCodes.FORBIDDEN, 'Only admin or assigned agent can update ticket status');
   }
@@ -130,7 +145,8 @@ const updateTicket = async ({ ticketId, updateData, currentUser }) => {
   const isAdmin = currentUser.role === 'admin';
   const isAssignedAgent =
     currentUser.role === 'agent' && ticket.assignedTo && ticket.assignedTo.toString() === currentUser._id.toString();
-  const isOwner = ticket.createdBy.toString() === currentUser._id.toString();
+    updateTicket,
+    notifyTicketAssignment
 
   if (!isAdmin && !isAssignedAgent && !isOwner) {
     throw new ApiError(StatusCodes.FORBIDDEN, 'Not allowed to update this ticket');
@@ -179,5 +195,6 @@ export {
   assignTicketToAgent,
   updateTicketStatus,
   addCommunication,
-  updateTicket
+  updateTicket,
+  notifyTicketAssignment
 };
