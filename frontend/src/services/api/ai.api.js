@@ -15,7 +15,15 @@ export const chatReplyRequest = async (payload) => {
   return response.data;
 };
 
+export const createTicketFromChatbotRequest = async (description) =>
+  (await axiosClient.post('/ai/reply', { description, forceCreateTicket: true })).data;
+
 export const getTicketConversationRequest = async (ticketId) => {
   const response = await axiosClient.get(`/ai/conversation/${ticketId}`);
   return response.data;
 };
+
+export const getChatHistoryRequest = async (ticketId) =>
+  (await axiosClient.get(`/ai/chat/history/${ticketId}`)).data;
+export const sendChatMessageRequest = async (ticketId, content) =>
+  (await axiosClient.post('/ai/chat/message', { ticketId, content })).data;

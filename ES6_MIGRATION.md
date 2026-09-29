@@ -217,7 +217,7 @@ npm run build
    cd frontend && npm run dev
    ```
 
-3. **Redis/MongoDB**: Ensure these are running before testing
+3. **MongoDB**: Ensure MongoDB is running before testing. Redis is not used by the current implementation.
 
 ---
 

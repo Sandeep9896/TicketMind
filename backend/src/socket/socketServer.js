@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import env from '../config/env.js';
 import User from '../models/user.model.js';
+import Notification from '../models/notification.model.js';
 import SOCKET_EVENTS from './socketEvents.js';
 
 let io;
@@ -10,6 +11,28 @@ let io;
 const userRoom = (userId) => `user:${userId}`;
 const roleRoom = (role) => `role:${role}`;
 const ticketRoom = (ticketId) => `ticket:${ticketId}`;
+
+const isUserOnline = (userId) => Boolean(io?.sockets.adapter.rooms.get(userRoom(userId.toString()))?.size);
+
+const flushUnsentNotifications = async (userId, socket) => {
+  const user = await User.findOneAndUpdate(
+    { _id: userId, unsentNotifications: { $exists: true, $ne: [] } },
+    { $set: { unsentNotifications: [] } },
+    { new: false }
+  ).select('unsentNotifications');
+
+  if (!user?.unsentNotifications?.length) {
+    return;
+  }
+
+  const notifications = await Notification.find({ _id: { $in: user.unsentNotifications } }).lean();
+
+  notifications.forEach((notification) => {
+    socket.emit(notification.eventName, notification.payload);
+  });
+
+  await Notification.deleteMany({ _id: { $in: user.unsentNotifications } });
+};
 
 const extractToken = (socket) => {
   const authHeader = socket.handshake?.headers?.authorization;
@@ -57,10 +80,14 @@ const initSocket = (httpServer) => {
 
   io.on(SOCKET_EVENTS.CONNECTION, (socket) => {
     const connectedUser = socket.data.user;
+    console.log( connectedUser);
 
     if (connectedUser) {
       socket.join(userRoom(connectedUser._id.toString()));
       socket.join(roleRoom(connectedUser.role));
+      flushUnsentNotifications(connectedUser._id, socket).catch((error) => {
+        console.error('[SOCKET] failed to flush unsent notifications:', error?.message || error);
+      });
     }
 
     socket.on(SOCKET_EVENTS.JOIN_TICKET_ROOM, ({ ticketId }) => {
@@ -101,6 +128,76 @@ const emitToRole = (role, eventName, payload) => {
   io.to(roleRoom(role)).emit(eventName, payload);
 };
 
+const emitNotificationToRoles = async (roles, eventName, payload) => {
+  if (!io || !roles?.length) {
+    return;
+  }
+
+  const recipients = await User.find({ role: { $in: roles } }).select('_id role').lean();
+  const offlineRecipients = recipients.filter(({ _id }) => !isUserOnline(_id));
+
+  roles.forEach((role) => emitToRole(role, eventName, payload));
+
+  if (!offlineRecipients.length) {
+    return;
+  }
+
+  const notifications = await Notification.insertMany(
+    offlineRecipients.map(({ _id }) => ({
+      recipient: _id,
+      eventName,
+      payload: {
+        ...payload,
+        ticket: payload.ticket?.toObject?.() || payload.ticket
+      }
+    }))
+  );
+
+  await User.bulkWrite(
+    notifications.map(({ _id, recipient }) => ({
+      updateOne: {
+        filter: { _id: recipient },
+        update: { $push: { unsentNotifications: _id } }
+      }
+    }))
+  );
+};
+
+const emitNotificationToUsers = async (userIds, eventName, payload) => {
+  if (!io || !userIds?.length) {
+    return;
+  }
+
+  const uniqueUserIds = [...new Set(userIds.map((userId) => userId.toString()))];
+  const offlineUserIds = uniqueUserIds.filter((userId) => !isUserOnline(userId));
+
+  uniqueUserIds.forEach((userId) => emitToUser(userId, eventName, payload));
+
+  if (!offlineUserIds.length) {
+    return;
+  }
+
+  const notifications = await Notification.insertMany(
+    offlineUserIds.map((userId) => ({
+      recipient: userId,
+      eventName,
+      payload: {
+        ...payload,
+        ticket: payload.ticket?.toObject?.() || payload.ticket
+      }
+    }))
+  );
+
+  await User.bulkWrite(
+    notifications.map(({ _id, recipient }) => ({
+      updateOne: {
+        filter: { _id: recipient },
+        update: { $push: { unsentNotifications: _id } }
+      }
+    }))
+  );
+};
+
 const emitToTicket = (ticketId, eventName, payload) => {
   if (!io || !ticketId) {
     return;
@@ -111,4 +208,13 @@ const emitToTicket = (ticketId, eventName, payload) => {
 
 const rooms = { userRoom, roleRoom, ticketRoom };
 
-export { initSocket, getIO, emitToUser, emitToRole, emitToTicket, rooms };
+export {
+  initSocket,
+  getIO,
+  emitToUser,
+  emitToRole,
+  emitToTicket,
+  emitNotificationToRoles,
+  emitNotificationToUsers,
+  rooms
+};

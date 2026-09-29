@@ -2,7 +2,7 @@ import { StatusCodes } from 'http-status-codes';
 import asyncHandler from '../utils/asyncHandler.js';
 import * as ticketService from '../services/ticket.service.js';
 import SOCKET_EVENTS from '../socket/socketEvents.js';
-import { emitToRole, emitToUser, emitToTicket } from '../socket/socketServer.js';
+import { emitToUser, emitToTicket } from '../socket/socketServer.js';
 import {
   validateCreateTicketPayload,
   validateAssignTicketPayload,
@@ -11,7 +11,6 @@ import {
   getCommunicationText
 } from '../modules/ticket/validators/ticket.validator.js';
 
-import { assignAgentWithAi } from '../services/ai-admin.service.js';
 const createTicket = asyncHandler(async (req, res) => {
   validateCreateTicketPayload(req.body);
 
@@ -20,20 +19,10 @@ const createTicket = asyncHandler(async (req, res) => {
     createdBy: req.user._id
   });
 
-  emitToRole('agent', SOCKET_EVENTS.TICKET_CREATED, {
-    ticketId: ticket._id,
-    ticket
-  });
-
-
   res.status(StatusCodes.CREATED).json({
     success: true,
     message: 'Ticket created successfully',
     data: ticket
-  });
-  console.log('[AI ADMIN] scheduling assignAgentWithAi for ticket:', ticket._id);
-  assignAgentWithAi(ticket).catch((error) => {
-    console.error('[AI ADMIN] assignAgentWithAi failed:', error?.message || error);
   });
 });
 
@@ -121,6 +110,8 @@ const addCommunication = asyncHandler(async (req, res) => {
     data: ticket
   });
 });
+
+
 
 export {
   createTicket,

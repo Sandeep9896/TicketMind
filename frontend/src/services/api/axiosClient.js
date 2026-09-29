@@ -1,9 +1,7 @@
 import axios from 'axios';
 
 const axiosClient = axios.create({
-  baseURL:
-    import.meta.env.VITE_API_BASE_URL ||
-    'http://localhost:4000/api/v1',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api/v1',
 
   headers: {
     'Content-Type': 'application/json'
@@ -42,6 +40,8 @@ axiosClient.interceptors.response.use(
     // Access token expired
     if (
       error.response?.status === 401 &&
+      originalRequest &&
+      !originalRequest.url?.includes('/auth/refresh-token') &&
       !originalRequest._retry
     ) {
 
@@ -51,7 +51,7 @@ axiosClient.interceptors.response.use(
 
         // CALL REFRESH TOKEN API
         const response = await axios.post(
-          'http://localhost:4000/api/v1/auth/refresh-token',
+          `${axiosClient.defaults.baseURL}/auth/refresh-token`,
           {},
           {
             withCredentials: true
@@ -66,6 +66,7 @@ axiosClient.interceptors.response.use(
           'tm_access_token',
           newAccessToken
         );
+        window.dispatchEvent(new CustomEvent('tm-auth-token-refreshed', { detail: newAccessToken }));
 
         // UPDATE HEADER
         originalRequest.headers.Authorization =
@@ -79,6 +80,8 @@ axiosClient.interceptors.response.use(
         // refresh token expired
 
         localStorage.removeItem('tm_access_token');
+        localStorage.removeItem('tm_user');
+        window.dispatchEvent(new CustomEvent('tm-auth-session-expired'));
 
         window.location.href = '/login';
 

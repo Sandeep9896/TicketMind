@@ -13,7 +13,7 @@ app.use(helmet());
 app.use(cookieParser());
 app.use(cors(
 	{
-		origin:'http://localhost:5173',
+		origin: env.corsOrigin,
 		credentials: true
 	}
 ));

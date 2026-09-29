@@ -7,7 +7,6 @@ import env from '../config/env.js';
 import User from '../models/user.model.js';
 import crypto from 'crypto';
 import {sendMail} from '../utils/sendMail.js';
-import bcrypt from 'bcryptjs';
 
 const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 const allowedRoles = ['admin', 'agent', 'user'];
@@ -40,7 +39,7 @@ const register = asyncHandler(async (req, res) => {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid agent type value');
   }
 
-  const payload = await authService.register({ name, email, password, role, agentType });
+  const payload = await authService.register({ name, email, password, role, agentType, status: 'active' });
 
   res.status(StatusCodes.CREATED)
   .cookie('token', payload.refreshToken, {
@@ -320,7 +319,32 @@ const resetPassword = asyncHandler(async (req, res) => {
   });
 });
 
+const logout = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+
+  const user = await User.findById(userId);
+
+  if (!user) {
+    throw new ApiError(
+      StatusCodes.UNAUTHORIZED,
+      'User not found'
+    );
+  }
+
+  // Remove the refresh token from the user's refreshTokens array
+  user.refreshTokens = user.refreshTokens.filter(
+    (item) => item.token !== req.cookies.token
+  );
+  user.status = 'inactive'; // Set user status to inactive on logout
+  
+  await user.save();
 
 
+  return res.status(200).json({
+    success: true,
+    message: 'Logged out successfully'
+  });
+});
 
-export { register, login, getAgents, changePassword, googleLogin, refreshToken, forgotPassword, resetPassword };
+
+export { register, login, getAgents, changePassword, googleLogin, refreshToken, forgotPassword, resetPassword, logout };

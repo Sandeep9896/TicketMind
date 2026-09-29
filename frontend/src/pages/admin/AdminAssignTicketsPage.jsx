@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { adminAgentsRequest } from '../../services/api/auth.api';
 import { adminTicketsRequest, assignTicketRequest } from '../../services/api/ticket.api';
-import { pushNotification } from '../../utils/notifications';
 
 const statusBadgeClass = (status) => {
   if (status === 'open') return 'border-amber-300/40 bg-amber-400/15 text-amber-100';
@@ -48,13 +47,6 @@ const AdminAssignTicketsPage = () => {
     try {
       await assignTicketRequest({ ticketId, agentId });
       setMessage('Ticket assigned successfully');
-      const agentName = agents.find((agent) => agent.id === agentId)?.name || 'selected agent';
-      const ticketTitle = tickets.find((ticket) => ticket._id === ticketId)?.title || 'ticket';
-      pushNotification({
-        title: 'Ticket assigned',
-        message: `${ticketTitle} was assigned to ${agentName}.`,
-        type: 'success'
-      });
       await loadData();
     } catch (submitError) {
       setError(submitError?.response?.data?.message || 'Failed to assign ticket');

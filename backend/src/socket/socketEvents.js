@@ -4,6 +4,7 @@ const SOCKET_EVENTS = {
   JOIN_TICKET_ROOM: 'ticket:join',
   LEAVE_TICKET_ROOM: 'ticket:leave',
   TICKET_CREATED: 'ticket:created',
+  TICKET_ASSIGNED: 'ticket:assigned',
   TICKET_STATUS_UPDATED: 'ticket:status-updated',
   TICKET_COMMUNICATION_ADDED: 'ticket:communication-added'
 };

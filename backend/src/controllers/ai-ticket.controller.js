@@ -93,12 +93,39 @@ const getTicketConversation = asyncHandler(async (req, res) => {
   });
 });
 
+const sendChatMessage = asyncHandler(async (req, res) => {
+  const ticketId = req.body?.ticketId?.toString().trim();
+  const content = req.body?.content?.toString().trim();
+  if (!ticketId) throw new ApiError(StatusCodes.BAD_REQUEST, 'ticketId is required');
+  if (!content) throw new ApiError(StatusCodes.BAD_REQUEST, 'content is required');
+  const data = await aiTicketService.chat({
+    ticketId,
+    userId: req.user._id,
+    content,
+    currentUser: req.user
+  });
+  res.json({ success: true, data });
+});
+
+const getChatHistory = asyncHandler(async (req, res) => {
+  const ticketId = req.params.ticketId;
+  const data = await aiTicketService.getChatHistory({
+    ticketId,
+    userId: req.user._id,
+    currentUser: req.user,
+    limit: req.query.limit
+  });
+  res.json({ success: true, data });
+});
+
 export {
   categorizeTicket,
   detectPriority,
   analyzeTicket,
   generateProfessionalReply,
   summarizeTicketConversation,
-  getTicketConversation
+  getTicketConversation,
+  sendChatMessage,
+  getChatHistory
 };
 export { suggestDescriptions };

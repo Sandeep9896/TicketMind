@@ -42,6 +42,10 @@ const validateReplyPayload = (body) => {
   if (body.isFollowUp !== undefined && typeof body.isFollowUp !== 'boolean') {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'isFollowUp must be a boolean');
   }
+
+  if (body.forceCreateTicket !== undefined && typeof body.forceCreateTicket !== 'boolean') {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'forceCreateTicket must be a boolean');
+  }
 };
 
 const validateSummaryPayload = (body) => {

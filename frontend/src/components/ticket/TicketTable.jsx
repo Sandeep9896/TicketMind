@@ -9,7 +9,7 @@ const TicketTable = ({ tickets = [] }) => {
   };
 
   const handleOpenChatbot = (ticket) => {
-    navigate('/user/chatbot', {
+    navigate(`/user/chatbot/${ticket._id}`, {
       state: {
         ticket: {
           _id: ticket._id,

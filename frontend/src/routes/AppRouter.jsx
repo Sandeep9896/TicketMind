@@ -77,6 +77,7 @@ const AppRouter = () => {
           <Route path="/user/create-ticket" element={<CreateTicketPage />} />
           <Route path="/user/profile" element={<UserProfilePage />} />
           <Route path="/user/chatbot" element={<UserChatbotPage />} />
+          <Route path="/user/chatbot/:ticketId" element={<UserChatbotPage />} />
           <Route path="/user/my-tickets" element={<MyTicketsPage />} />
           <Route path="/user/ticket/:ticketId/communication" element={<UserTicketCommunicationPage />} />
         </Route>

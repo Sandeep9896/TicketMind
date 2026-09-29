@@ -87,7 +87,7 @@ Frontend provides:
 - MongoDB + Mongoose
 - JWT authentication
 - Socket.IO event server
-- OpenAI SDK integration (provider-driven AI service)
+- Groq SDK integration with a reusable AI completion service
 
 Backend qualities:
 
@@ -248,4 +248,3 @@ Tagline:
 ### Production Build
 
 - Frontend build command: npm run build
-

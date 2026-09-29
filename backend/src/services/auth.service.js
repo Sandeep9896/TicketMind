@@ -32,11 +32,14 @@ const register = async ({ name, email, password, role, agentType }) => {
     email,
     password,
     role: role || 'user',
+    status: 'active',
     agentType: role === 'agent' ? agentType : null
   });
 
   const token = user.generateAccessToken();
   const refreshToken = user.generateRefreshToken();
+  user.refreshTokens.push({ token: refreshToken });
+  await user.save();
 
   return {
     user: sanitizeUser(user),
@@ -61,6 +64,7 @@ const login = async ({ email, password }) => {
   const token = user.generateAccessToken();
   const refreshToken = user.generateRefreshToken();
   user.refreshTokens.push({ token: refreshToken });
+  user.status = 'active'; // Set user status to active on successful login
   await user.save();
 
   return {
@@ -111,7 +115,8 @@ const googleLogin = async ({ credential }) => {
       name,
       email,
       password: generatedPassword,
-      role: 'user'
+      role: 'user',
+      status: 'active'
     });
 
     sendMail({
@@ -138,6 +143,9 @@ const googleLogin = async ({ credential }) => {
     </p>
   `
     });
+  } else {
+    user.status = 'active';
+    await user.save();
   }
   const token = user.generateAccessToken();
   const refreshToken = user.generateRefreshToken();

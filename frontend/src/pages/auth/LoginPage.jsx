@@ -4,11 +4,11 @@ import { useAuth } from '../../hooks/useAuth';
 import ThemeToggleButton from '../../components/common/ThemeToggleButton';
 import useThemeMode from '../../hooks/useThemeMode';
 import { GoogleLogin } from '@react-oauth/google';
-import { googleLoginRequest,forgetPasswordRequest } from '../../services/api/auth.api';
+import { forgetPasswordRequest } from '../../services/api/auth.api';
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { login,persistSession } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -19,16 +19,11 @@ const LoginPage = () => {
 
   const handleSuccess = async (credentialResponse) => {
     try {
-      const res = await googleLoginRequest(credentialResponse.credential);
-      console.log("login", res.data);
-      persistSession({
-        sessionUser: res.data.user,
-        sessionToken: res.data.token
-      });
+      await loginWithGoogle(credentialResponse.credential);
       navigate('/dashboard');
 
     } catch (error) {
-      console.log(error)
+      setError(error?.response?.data?.message || 'Google login failed');
     }
   }
 
@@ -47,14 +42,14 @@ const LoginPage = () => {
     }
   };
 
-  const handleForgetPassword = () => {
+  const handleForgetPassword = async () => {
     if (!email) {
       return alert('Please enter your email to reset password');
     }
-    const res = forgetPasswordRequest(email);
-    if(res) {
+    try {
+      await forgetPasswordRequest(email);
       alert('Password reset link sent to your email');
-    } else {
+    } catch {
       alert('Failed to send reset link. Please try again.');
     }
   }
@@ -127,7 +122,7 @@ const LoginPage = () => {
             <GoogleLogin
               onSuccess={handleSuccess}
               onError={() => {
-                console.log('Login Failed');
+                setError('Google login failed');
               }}
             />
 

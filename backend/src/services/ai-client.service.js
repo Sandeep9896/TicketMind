@@ -27,6 +27,7 @@ const getGroqClient = () => {
 
     groqClient = new Groq({
       apiKey: env.groqApiKey,
+      timeout: env.aiTimeoutMs,
       ...(normalizedBaseUrl ? { baseURL: normalizedBaseUrl } : {})
     });
   }
@@ -36,4 +37,26 @@ const getGroqClient = () => {
 
 const getGroqModel = () => env.groqModel;
 
-export { getGroqClient, getGroqModel };
+const completeChat = async ({
+  messages,
+  tools,
+  tool_choice,
+  temperature = 0.2,
+  parallel_tool_calls = false,
+  maxTokens = env.aiMaxOutputTokens
+}) => {
+  const payload = {
+    model: getGroqModel(),
+    messages,
+    temperature,
+    max_tokens: maxTokens,
+    parallel_tool_calls
+  };
+
+  if (tools) payload.tools = tools;
+  if (tool_choice) payload.tool_choice = tool_choice;
+
+  return getGroqClient().chat.completions.create(payload);
+};
+
+export { completeChat, getGroqClient, getGroqModel };

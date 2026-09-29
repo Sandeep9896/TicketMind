@@ -27,16 +27,16 @@ const AgentLoginPage = () => {
 
     try {
       const result = await login({ email, password });
-      const sessionUser = result?.data?.user;
+      const sessionUser = result?.user;
 
       if (sessionUser?.role !== 'agent') {
-        logout();
+        await logout();
         setError('This page is for agent accounts only');
         return;
       }
 
       if (sessionUser?.agentType !== agentType) {
-        logout();
+        await logout();
         setError('Selected agent type does not match this account');
         return;
       }

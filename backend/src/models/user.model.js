@@ -22,6 +22,11 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true
     },
+    status: {
+      type: String,
+      enum: ['active', 'inactive'],
+      default: 'active'
+    },
     password: {
       type: String,
       required: true,
@@ -38,6 +43,13 @@ const userSchema = new mongoose.Schema(
       enum: agentTypes,
       default: null
     },
+
+    unsentNotifications: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Notification'
+      }
+    ],
     refreshTokens: [
     {
       token: String,
@@ -45,10 +57,16 @@ const userSchema = new mongoose.Schema(
         type: Date,
         default: Date.now
       }
+      ,//remove refreshtoken after long peroid of time
+      expiresAt: {
+        type: Date,
+        default: () => new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
+      }
     }
   ],
   resetPasswordToken:{ type: String },
   resetPasswordExpires: { type: Date },
+  
   },
   {
     timestamps: true

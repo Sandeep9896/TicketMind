@@ -29,7 +29,7 @@ const AgentRegisterPage = () => {
     try {
       const result = await register({ name, email, password, role: 'agent', agentType });
 
-      if (result?.data?.user?.role !== 'agent') {
+      if (result?.user?.role !== 'agent') {
         setError('Agent registration failed');
         return;
       }

@@ -3,9 +3,6 @@ import env from './config/env.js';
 import connectDB from './config/db.js';
 import { createServer } from 'http';
 import { initSocket } from './socket/socketServer.js';
-import cookieParser from 'cookie-parser';
-
-app.use(cookieParser());
 
 const httpServer = createServer(app);
 

@@ -1,11 +1,12 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
+import { useDispatch, useSelector } from 'react-redux';
 import chatbotImage from '../../assets/images/logo.png';
 import Footer from './Footer';
 import ThemeToggleButton from '../common/ThemeToggleButton';
 import NotificationBell from '../common/NotificationBell';
-import { getStoredNotifications, saveNotifications, NOTIFICATION_EVENT } from '../../utils/notifications';
+import { clearNotifications, dismissNotification } from '../../redux/slices/notifications/notificationSlice';
 
 const getRoleStyles = (role) => {
   const styles = {
@@ -33,45 +34,13 @@ const getRoleStyles = (role) => {
 
 const AppShell = () => {
   const { user, logout } = useAuth();
+  const dispatch = useDispatch();
+  const notifications = useSelector((state) => state.notifications);
   const roleStyles = getRoleStyles(user?.role);
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
-  const [notifications, setNotifications] = useState(() => getStoredNotifications());
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
-  useEffect(() => {
-    const handleNotification = (event) => {
-      const nextNotification = event?.detail;
-      if (!nextNotification) return;
-
-      setNotifications((current) => {
-        const next = [nextNotification, ...current].slice(0, 10);
-        saveNotifications(next);
-        return next;
-      });
-    };
-
-    const handleOutsideClick = (event) => {
-      if (!event.target.closest?.('[data-notification-root]')) {
-        setNotificationsOpen(false);
-      }
-    };
-
-    window.addEventListener(NOTIFICATION_EVENT, handleNotification);
-    document.addEventListener('click', handleOutsideClick);
-
-    return () => {
-      window.removeEventListener(NOTIFICATION_EVENT, handleNotification);
-      document.removeEventListener('click', handleOutsideClick);
-    };
-  }, []);
-
   const getNavItems = () => {
-    const baseItems = [
-      { icon: '🏠', label: 'Home', to: '/user/dashboard' },
-      { icon: '🔍', label: 'Search', to: '#' },
-      { icon: '❤️', label: 'Likes', to: '#' }
-    ];
-
     if (user?.role === 'user') {
       return [
         { icon: '🎯', label: 'Dashboard', to: '/user/dashboard' },
@@ -126,15 +95,8 @@ const AppShell = () => {
               open={notificationsOpen}
               compact
               onToggle={() => setNotificationsOpen((current) => !current)}
-              onClearAll={() => {
-                saveNotifications([]);
-                setNotifications([]);
-              }}
-              onDismiss={(id) => {
-                const next = notifications.filter((item) => item.id !== id);
-                saveNotifications(next);
-                setNotifications(next);
-              }}
+              onClearAll={() => dispatch(clearNotifications())}
+              onDismiss={(id) => dispatch(dismissNotification(id))}
             />
           </div>
 

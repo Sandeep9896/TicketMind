@@ -22,16 +22,17 @@ NODE_ENV=development
 MONGO_URI=mongodb://127.0.0.1:27017/ticketmind
 JWT_ACCESS_SECRET=your-very-strong-secret
 JWT_ACCESS_EXPIRES_IN=15m
+REFRESH_TOKEN_SECRET=your-very-strong-refresh-secret
+REFRESH_TOKEN_EXPIRES_IN=7d
 CORS_ORIGIN=http://localhost:5173
 
-# AI provider config (optional, required only if AI routes are used)
-AI_PROVIDER=groq
-OPENAI_API_KEY=
-OPENAI_MODEL=gpt-4.1-mini
-OPENAI_BASE_URL=
+# Groq AI config (required only if AI routes are used)
 GROQ_API_KEY=
 GROQ_MODEL=llama-3.3-70b-versatile
 GROQ_BASE_URL=https://api.groq.com
+AI_TIMEOUT_MS=30000
+AI_MAX_OUTPUT_TOKENS=800
+AI_MAX_CONVERSATION_CHARS=12000
 ~~~
 
 ### Run

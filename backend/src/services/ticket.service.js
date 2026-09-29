@@ -2,7 +2,6 @@ import { StatusCodes } from 'http-status-codes';
 import ApiError from '../utils/ApiError.js';
 import User from '../models/user.model.js';
 import { Ticket } from '../models/ticket.model.js';
-import { appendTicketCommunication, createTicketConversation } from './conversation.service.js';
 import SOCKET_EVENTS from '../socket/socketEvents.js';
 import { emitNotificationToRoles, emitNotificationToUsers } from '../socket/socketServer.js';
 
@@ -21,12 +20,12 @@ const notifyTicketAssignment = async (ticket) => {
   };
 
   await emitNotificationToUsers([populatedTicket.assignedTo._id], SOCKET_EVENTS.TICKET_ASSIGNED, notification);
-  await emitNotificationToRoles(['admin'], SOCKET_EVENTS.TICKET_ASSIGNED, notification);
+  // await emitNotificationToRoles(['admin'], SOCKET_EVENTS.TICKET_ASSIGNED, notification);
 
   return populatedTicket;
 };
 
-const createTicket = async ({ title, description, priority, category, createdBy, conversationContent }) => {
+const createTicket = async ({ title, description, priority, category, createdBy }) => {
   const ticket = await Ticket.create({
     title,
     description,
@@ -35,17 +34,6 @@ const createTicket = async ({ title, description, priority, category, createdBy,
     createdBy
   });
 
-  const conversation = await createTicketConversation({
-    ticket,
-    userId: createdBy,
-    content: conversationContent
-  });
-
-  if (conversation?._id) {
-    ticket.conversationId = conversation._id.toString();
-    await ticket.save();
-  }
-
   const populatedTicket = await Ticket.findById(ticket._id).populate(basePopulate);
 
   const notification = {
@@ -53,7 +41,7 @@ const createTicket = async ({ title, description, priority, category, createdBy,
     ticket: populatedTicket
   };
 
-  await emitNotificationToRoles(['agent', 'admin'], SOCKET_EVENTS.TICKET_CREATED, notification);
+  await emitNotificationToRoles(['admin'], SOCKET_EVENTS.TICKET_CREATED, notification);
 
   return populatedTicket;
 };
@@ -83,6 +71,18 @@ const assignTicketToAgent = async ({ ticketId, agentId }) => {
 };
 
 const updateTicketStatus = async ({ ticketId, status, currentUser }) => {
+  const ticket = await Ticket.findById(ticketId);
+
+  if (!ticket) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Ticket not found');
+  }
+
+  const isAdmin = currentUser.role === 'admin';
+  const isAssignedAgent =
+    currentUser.role === 'agent' &&
+    ticket.assignedTo &&
+    ticket.assignedTo.toString() === currentUser._id.toString();
+
   if (!isAdmin && !isAssignedAgent) {
     throw new ApiError(StatusCodes.FORBIDDEN, 'Only admin or assigned agent can update ticket status');
   }
@@ -125,13 +125,6 @@ const addCommunication = async ({ ticketId, communication, currentUser }) => {
 
   await ticket.save();
 
-  await appendTicketCommunication({
-    ticketId,
-    userId: ticket.createdBy,
-    communication,
-    senderRole: currentUser.role
-  });
-
   return Ticket.findById(ticket._id).populate(basePopulate);
 };
 const updateTicket = async ({ ticketId, updateData, currentUser }) => {
@@ -145,8 +138,7 @@ const updateTicket = async ({ ticketId, updateData, currentUser }) => {
   const isAdmin = currentUser.role === 'admin';
   const isAssignedAgent =
     currentUser.role === 'agent' && ticket.assignedTo && ticket.assignedTo.toString() === currentUser._id.toString();
-    updateTicket,
-    notifyTicketAssignment
+  const isOwner = ticket.createdBy.toString() === currentUser._id.toString();
 
   if (!isAdmin && !isAssignedAgent && !isOwner) {
     throw new ApiError(StatusCodes.FORBIDDEN, 'Not allowed to update this ticket');

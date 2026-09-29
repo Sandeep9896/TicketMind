@@ -1,6 +1,7 @@
-import { getGroqClient, getGroqModel } from "./ai-client.service.js";
+import { completeChat } from "./ai-client.service.js";
 import userModel from "../models/user.model.js";
 import { Ticket } from "../models/ticket.model.js";
+import { notifyTicketAssignment } from './ticket.service.js';
 
 const getAgentsInfo = async (agentType) => {
     const baseQuery = { role: 'agent' };
@@ -29,14 +30,6 @@ const assignAgentWithAi = async (ticketData) => {
         agentType: ticketData?.agentType
     });
 
-    let groqClient;
-    try {
-        groqClient = getGroqClient();
-    } catch (error) {
-        console.error('[AI ADMIN] getGroqClient failed:', error?.message || error);
-        return null;
-    }
-
     // Use explicit agentType if provided, otherwise use category as-is
     const agentType = ticketData?.agentType || ticketData?.category;
     const agentsList = await getAgentsInfo(agentType);
@@ -61,10 +54,7 @@ const assignAgentWithAi = async (ticketData) => {
 
     let response;
     try {
-        response = await groqClient.chat.completions.create({
-            model: getGroqModel(),
-            messages
-        });
+        response = await completeChat({ messages, temperature: 0.1 });
     } catch (error) {
         console.error('[AI ADMIN] AI completion failed:', error?.message || error);
         return null;
@@ -93,7 +83,11 @@ const assignAgentWithAi = async (ticketData) => {
     // If not exact match, try contains
     let chosen = agent;
     if (!chosen) {
-        chosen = await userModel.findOne({ role: 'agent', name: { $regex: nameCandidate, $options: 'i' } }).select('-password').lean();
+        const escapedCandidate = nameCandidate.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        chosen = await userModel.findOne({
+            role: 'agent',
+            name: { $regex: escapedCandidate, $options: 'i' }
+        }).select('-password').lean();
     }
 
     const ticketId = ticketData?._id || ticketData?.id || ticketData?.ticketId;
@@ -102,7 +96,10 @@ const assignAgentWithAi = async (ticketData) => {
     if (chosen && ticketId) {
         setImmediate(async () => {
             try {
-                await Ticket.findByIdAndUpdate(ticketId, { assignedTo: chosen._id }, { new: true });
+                const assignedTicket = await Ticket.findByIdAndUpdate(ticketId, { assignedTo: chosen._id }, { new: true });
+                if (assignedTicket) {
+                    await notifyTicketAssignment(assignedTicket);
+                }
                 console.log(`[AI ADMIN] Assigned ticket ${ticketId} to agent ${chosen._id}`);
             } catch (err) {
                 console.error('[AI ADMIN] Failed to assign ticket:', err?.message || err);

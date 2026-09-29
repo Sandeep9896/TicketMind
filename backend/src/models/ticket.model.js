@@ -77,12 +77,11 @@ const ticketSchema = new mongoose.Schema(
       type: [commentSchema],
       default: []
     },
-    conversationId: {
+    aiChatSummary: {
       type: String,
-      default: null,
-      index: true
-    }
-
+      default: '',
+      maxlength: 10000
+    },
   },
   {
     timestamps: true

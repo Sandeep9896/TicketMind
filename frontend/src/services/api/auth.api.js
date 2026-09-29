@@ -39,3 +39,8 @@ export const resetPasswordRequest = async (payload) => {
   const response = await axiosClient.post('/auth/reset-password', payload);
   return response.data;
 }
+
+export const logoutRequest = async () => {
+  const response = await axiosClient.post('/auth/logout');
+  return response.data;
+}

@@ -67,7 +67,7 @@ Pure business logic layer. Services are database-agnostic and testable:
 - **ticket.service.js**: Create, read, update tickets; manage comments and assignments
 - **analytics.service.js**: MongoDB aggregation pipelines for stats
 - **ai-ticket.service.js**: AI integration (categorization, priority, replies)
-- **ai-client.service.js**: Provider abstraction (OpenAI or Groq)
+- **ai-client.service.js**: Reusable Groq completion client with shared timeout/output limits
 
 ### Controllers (`/controllers`)
 HTTP request handlers. Controllers:

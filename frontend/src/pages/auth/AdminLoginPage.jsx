@@ -19,8 +19,8 @@ const AdminLoginPage = () => {
     try {
       const result = await login({ email, password });
 
-      if (result?.data?.user?.role !== 'admin') {
-        logout();
+      if (result?.user?.role !== 'admin') {
+        await logout();
         setError('This page is for admin accounts only');
         return;
       }
